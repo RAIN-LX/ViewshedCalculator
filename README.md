@@ -4,6 +4,10 @@ Python script for generating viewsheds across coastal transects
 The goal is to be able to draw a line in ArcGIS Pro, and feed the line shape to the script so
 that it generates a viewshed for continous points along the line. 
 
+# ArcGIS Resource Pages:
+1. Generate points along line https://pro.arcgis.com/en/pro-app/latest/tool-reference/data-management/generate-points-along-lines.htm
+
+
 # Current Process:
 
 1. DEM data for Pensacola Beach region acquired as .tif file from https://apps.nationalmap.gov/lidar-explorer/#/ (USGS)
