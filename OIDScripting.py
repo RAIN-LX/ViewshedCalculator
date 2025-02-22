@@ -1,0 +1,58 @@
+arcpy.oi.CreateOrientedImageryDataset(
+    out_dataset_path=r"C:\Data\PhD\Projects\FlSeaGrantHurricaneViewsheds\FLSeaGrantGISWork.gdb",
+    out_dataset_name="FlaglerBeachOID",
+    spatial_reference='PROJCS["NAD_1983_2011_StatePlane_Florida_East_FIPS_0901_Ft_US",GEOGCS["GCS_NAD_1983_2011",DATUM["D_NAD_1983_2011",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["False_Easting",656166.6666666665],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",-81.0],PARAMETER["Scale_Factor",0.9999411764705882],PARAMETER["Latitude_Of_Origin",24.33333333333333],UNIT["Foot_US",0.3048006096012192]];-17791300 -41645400 137249422.942576;-100000 10000;-100000 10000;3.28083333333333E-03;0.001;0.001;IsHighPrecision',
+    elevation_source="CONSTANT_ELEVATION",
+    constant_elevation=None,
+    dem=None,
+    lod="",
+    raster_function="",
+    template=None,
+    out_dataset_alias="",
+    config_keyword=""
+)
+
+arcpy.oi.AddImagesToOrientedImageryDataset(
+    in_oriented_imagery_dataset="FlaglerBeachOID",
+    imagery_category="Horizontal",
+    input_data=r"C:\Data\PhD\Projects\FlSeaGrantHurricaneViewsheds\FieldWork\FlaglerBeach\Transect0",
+    include_sub_folders="SUBFOLDERS",
+    folder_filter="",
+    where_clause="",
+    include_all_fields="NO_INCLUDE_ALL_FIELDS"
+)
+
+arcpy.management.CalculateField(
+    in_table="FlaglerBeachOID",
+    field="CameraHeading",
+    expression="90",
+    expression_type="PYTHON3",
+    code_block="",
+    field_type="TEXT",
+    enforce_domains="NO_ENFORCE_DOMAINS"
+)
+arcpy.management.CalculateField(
+    in_table="FlaglerBeachOID",
+    field="CameraPitch",
+    expression="180",
+    expression_type="PYTHON3",
+    code_block="",
+    field_type="TEXT",
+    enforce_domains="NO_ENFORCE_DOMAINS"
+)
+arcpy.management.CalculateField(
+    in_table="FlaglerBeachOID",
+    field="CameraRoll",
+    expression="0",
+    expression_type="PYTHON3",
+    code_block="",
+    field_type="TEXT",
+    enforce_domains="NO_ENFORCE_DOMAINS"
+)
+
+arcpy.oi.BuildOrientedImageryFootprint(
+    in_oriented_imagery_dataset="FlaglerBeachOID",
+    out_dataset_path=r"C:\Data\PhD\Projects\FlSeaGrantHurricaneViewsheds\FLSeaGrantGISWork.gdb",
+    out_dataset_name="FlaglerBeachOID_Footprint",
+    footprint_option="PER_IMAGE"
+)

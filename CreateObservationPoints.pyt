@@ -53,27 +53,35 @@ class Tool:
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
-        in_feature_layer = parameters[0].valueAsText
+        in_feature_layer = parameters[0].valueAsText 
         arcpy.AddMessage(in_feature_layer)
 
         #May not need to programmatically get selected features because 
         #appears to be an option on the tool to use selected featrues         
         selected_features = arcpy.Describe(in_feature_layer).FIDSet
-        query_list = f"({','.join([val for val in selected_features.split(';')])})"
-        arcpy.AddMessage(query_list) 
-        # https://pro.arcgis.com/en/pro-app/latest/tool-reference/data-management/generate-points-along-lines.htm
 
-        workspace = r"G:\My Drive\Projects\FlSeaGrantHurricaneViewsheds\Data\PensacolaBeach"
-        pointOutput = workspace + "\ObserverPoints"
-        pointSpacing = 10        
+        # query_list = f"({','.join([val for val in selected_features.split(';')])})"
+        # arcpy.AddMessage(query_list) #Transect ID number
+
+        # https://pro.arcgis.com/en/pro-app/latest/tool-reference/data-management/generate-points-along-lines.htm
+        workspace = r"G:\My Drive\Projects\FlSeaGrantHurricaneViewsheds\Data\FlaglerBeach"
+        pointOutput = workspace + "\FB_Transect{}.shp".format(selected_features) #Transect ID number
+        pointPctSpacing = 25        
         arcpy.management.GeneratePointsAlongLines(
             Input_Features= in_feature_layer,
             Output_Feature_Class= pointOutput,
             Point_Placement="PERCENTAGE",
-            Percentage=pointSpacing,
-            Include_End_Points="NO_END_POINTS",
+            Percentage=pointPctSpacing,
+            Include_End_Points="END_POINTS",
         )     
-        arcpy.AddMessage("Finished creating observation points")    
+        aprx = arcpy.mp.ArcGISProject("CURRENT")
+        m = aprx.listMaps()
+        for i in m:
+            print(i.name)
+            if i.name=="FlaglerBeach":
+                i.addDataFromPath(pointOutput)        
+                arcpy.AddMessage("Adding observation points {0}".format(i.name))
+        arcpy.AddMessage("Finished creating observation points")
         return
 
     def postExecute(self, parameters):
