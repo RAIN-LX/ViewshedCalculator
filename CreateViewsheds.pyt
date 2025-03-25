@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import arcpy
-
+from arcpy import env
+env.overwriteOutput = True
 
 class Toolbox:
     def __init__(self):
@@ -52,25 +53,11 @@ class Tool:
                 direction="Input"),
 
             arcpy.Parameter(
-                displayName="Spatial Reference",
-                name="projectionref",
-                datatype="GPSpatialReference",
+                displayName="Viewsheds Folder",
+                name="vs_folder",
+                datatype="DEFolder",
                 parameterType="Required",
-                direction="Input"),
-
-            arcpy.Parameter(
-                displayName="Output Name",
-                name="outRaster",
-                datatype="DEDiskConnection",
-                parameterType="Required",
-                direction="Output"),
-
-            arcpy.Parameter(
-                displayName="Input Workspace",
-                name="in_workspace",
-                datatype="DEWorkspace",
-                parameterType="Derived",
-                direction="Output")
+                direction="Input")
             ]        
         return params
 
@@ -81,22 +68,12 @@ class Tool:
     def updateParameters(self, parameters):
         parameters[2].value = "15 feet"
         parameters[3].value = "2 miles"
-        
-
-        try:
-            # https://pro.arcgis.com/en/pro-app/3.3/arcpy/classes/spatialreference.htm
-            if arcpy.Describe(parameters[0]).spatialReference:
-                parameters[4].value = arcpy.Describe(parameters[0]).spatialReference
-        except Exception:
-            pass
-
-
-        parameters[6].defaultEnvironmentName = "workspace"
-
-        return
-
-    def updateMessages(self, parameters):
-        arcpy.AddMessage("{0} is {1}:".format("param 0: ", parameters[0].valueAsText))
+        # try:
+        #     # https://pro.arcgis.com/en/pro-app/3.3/arcpy/classes/spatialreference.htm
+        #     if arcpy.Describe(parameters[0]).spatialReference:
+        #         parameters[4].value = arcpy.Describe(parameters[0]).spatialReference
+        # except Exception:
+        #     pass
         return
 
     def execute(self, parameters, messages):
@@ -120,38 +97,39 @@ class Tool:
         arcpy.AddMessage("{0} is {1}:".format("param 2: ", parameters[2].valueAsText))
         arcpy.AddMessage("{0} is {1}:".format("param 3: ", parameters[3].valueAsText))
         arcpy.AddMessage("{0} is {1}:".format("param 4: ", parameters[4].valueAsText))
-        arcpy.AddMessage("{0} is {1}:".format("param 5: ", parameters[5].valueAsText))
+        # arcpy.AddMessage("{0} is {1}:".format("param 5: ", parameters[5].valueAsText))
 
-        
+        arcpy.env.workspace = r"{}".format(parameters[4].valueAsText)
 
         # Since the project is in feet let's keep the parameters in feet as well e.g. 6 feet on observer elevation
         with arcpy.da.SearchCursor(parameters[0].valueAsText,['SHAPE@','FID']) as cursor:
             for row in cursor:
                 arcpy.AddMessage("Running viewshed number {}".format(row[1]))
-                # with arcpy.EnvManager(outputCoordinateSystem=sr, parallelProcessingFactor="100%", scratchWorkspace=workspace):
-                #     out_raster = arcpy.sa.Viewshed2(
-                #         in_raster=parameters[1].valueAsText,
-                #         in_observer_features=row[0],
-                #         out_agl_raster=None,
-                #         analysis_type="FREQUENCY",
-                #         vertical_error="0 Meters",
-                #         out_observer_region_relationship_table=None,
-                #         refractivity_coefficient=0.13,
-                #         surface_offset="0 Meters",
-                #         observer_elevation=parameters[2].valueAsText,
-                #         observer_offset="1 Meters",
-                #         inner_radius=None,
-                #         inner_radius_is_3d="GROUND",
-                #         outer_radius=parameters[3].valueAsText,
-                #         outer_radius_is_3d="GROUND",
-                #         horizontal_start_angle=0,
-                #         horizontal_end_angle=360,
-                #         vertical_upper_angle=90,
-                #         vertical_lower_angle=-90,
-                #         analysis_method="ALL_SIGHTLINES",
-                #         analysis_target_device="CPU_ONLY"
-                #     )
-                #     out_raster.save(parameters[5].valueAsText + str(row[1]) +".tif")
+                arcpy.AddMessage("Creating {}".format(parameters[0].valueAsText + str(row[1]) +".tif"))
+                with arcpy.EnvManager(outputCoordinateSystem=sr, parallelProcessingFactor="100%"):
+                    out_raster = arcpy.sa.Viewshed2(
+                        in_raster=parameters[1].valueAsText,
+                        in_observer_features=row[0],
+                        out_agl_raster=None,
+                        analysis_type="FREQUENCY",
+                        vertical_error="0 Meters",
+                        out_observer_region_relationship_table=None,
+                        refractivity_coefficient=0.13,
+                        surface_offset="0 Meters",
+                        observer_elevation=parameters[2].valueAsText,
+                        observer_offset="1 Meters",
+                        inner_radius=None,
+                        inner_radius_is_3d="GROUND",
+                        outer_radius=parameters[3].valueAsText,
+                        outer_radius_is_3d="GROUND",
+                        horizontal_start_angle=0,
+                        horizontal_end_angle=360,
+                        vertical_upper_angle=90,
+                        vertical_lower_angle=-90,
+                        analysis_method="ALL_SIGHTLINES",
+                        analysis_target_device="CPU_ONLY"
+                    )
+                    out_raster.save(parameters[0].valueAsText + str(row[1]) +".tif")
         return
 
     def postExecute(self, parameters):
