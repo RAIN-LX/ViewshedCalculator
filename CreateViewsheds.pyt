@@ -66,8 +66,10 @@ class Tool:
         return True
 
     def updateParameters(self, parameters):
+        #TODO: modify to be able to update values from tool
+        # see https://pro.arcgis.com/en/pro-app/latest/arcpy/geoprocessing_and_python/customizing-tool-behavior-in-a-python-toolbox.htm
         parameters[2].value = "15 feet"
-        parameters[3].value = "2 miles"
+        parameters[3].value = ".25 miles"
         # try:
         #     # https://pro.arcgis.com/en/pro-app/3.3/arcpy/classes/spatialreference.htm
         #     if arcpy.Describe(parameters[0]).spatialReference:
