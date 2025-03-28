@@ -2,6 +2,8 @@
 
 import arcpy
 from arcpy import env
+from arcpy import sa  # Spatial Analyst extension
+import numpy as np  # For handling raster arrays
 env.overwriteOutput = True
 
 class Toolbox:
@@ -102,12 +104,15 @@ class Tool:
         # arcpy.AddMessage("{0} is {1}:".format("param 5: ", parameters[5].valueAsText))
 
         arcpy.env.workspace = r"{}".format(parameters[4].valueAsText)
-
+        
+        arcpy.CheckOutExtension("Spatial")
+        
         # Since the project is in feet let's keep the parameters in feet as well e.g. 6 feet on observer elevation
         with arcpy.da.SearchCursor(parameters[0].valueAsText,['SHAPE@','FID']) as cursor:
             for row in cursor:
                 arcpy.AddMessage("Running viewshed number {}".format(row[1]))
-                arcpy.AddMessage("Creating {}".format(parameters[0].valueAsText + str(row[1]) +".tif"))
+                output_path = parameters[0].valueAsText + str(row[1]) + ".tif"
+                arcpy.AddMessage("Creating {}".format(output_path))
                 with arcpy.EnvManager(outputCoordinateSystem=sr, parallelProcessingFactor="100%"):
                     out_raster = arcpy.sa.Viewshed2(
                         in_raster=parameters[1].valueAsText,
@@ -131,7 +136,48 @@ class Tool:
                         analysis_method="ALL_SIGHTLINES",
                         analysis_target_device="CPU_ONLY"
                     )
-                    out_raster.save(parameters[0].valueAsText + str(row[1]) +".tif")
+
+                    # Original way of doing this leaves areas within the radius as no data values as well.
+                    # out_raster.save(output_path)
+
+                    # jdm: Attempt to do w/ NumPy instead
+                    # see: https://pro.arcgis.com/en/pro-app/3.3/arcpy/functions/rastertonumpyarray-function.htm
+                    # Convert Raster to numpy array
+                    # Get input Raster properties
+                    inRas = arcpy.Raster(out_raster)
+                    lowerLeft = arcpy.Point(inRas.extent.XMin,inRas.extent.YMin)
+                    cellSize = inRas.meanCellWidth
+
+                    # Convert Raster to numpy array
+                    numpy_raster = arcpy.RasterToNumPyArray(inRas,nodata_to_value=0)
+                    visibility_raster = numpy_raster.copy()
+
+                    # # Create a new array with explicit visibility mapping
+                    visibility_raster[np.isnan(numpy_raster)] = 0  # Set no data values to zero
+                    
+                    #Convert Array to raster (keep the origin and cellsize the same as the input)
+                    output_raster = arcpy.NumPyArrayToRaster(
+                                                        numpy_raster,lowerLeft,
+                                                        cellSize,
+                                                        value_to_nodata=None
+                                                        )
+                    
+                    # Create a buffered feature from the input point
+                    buffered_point = arcpy.Buffer_analysis(
+                        in_features=row[0], 
+                        out_feature_class="in_memory/buffered_point", 
+                        buffer_distance_or_field=f"{parameters[3].valueAsText}"
+                    )
+
+                    # Extract by mask - clip the raster to the buffered point
+                    clipped_raster = arcpy.sa.ExtractByMask(
+                        in_raster=output_raster, 
+                        in_mask_data=buffered_point
+                    )
+
+                    clipped_raster.save(output_path)
+        
+        arcpy.CheckInExtension("Spatial")
         return
 
     def postExecute(self, parameters):
